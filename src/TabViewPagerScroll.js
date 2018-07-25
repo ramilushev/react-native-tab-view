@@ -1,9 +1,11 @@
 /* @flow */
 
 import * as React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Animated } from 'react-native';
 import { PagerRendererPropType } from './TabViewPropTypes';
 import type { PagerRendererProps } from './TabViewTypeDefinitions';
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 
 type ScrollEvent = {
   nativeEvent: {
@@ -87,7 +89,7 @@ export default class TabViewPagerScroll<T: *> extends React.Component<
 
   _scrollTo = (x: number, animated = true) => {
     if (this._isIdle && this._scrollView) {
-      this._scrollView.scrollTo({
+      this._scrollView._component.scrollTo({
         x,
         animated: animated && this.props.animationEnabled !== false,
       });
@@ -139,10 +141,11 @@ export default class TabViewPagerScroll<T: *> extends React.Component<
       navigationState,
       onSwipeStart,
       onSwipeEnd,
+      scrollPosAnimatedValue
     } = this.props;
 
     return (
-      <ScrollView
+      <AnimatedScrollView
         horizontal
         pagingEnabled
         directionalLockEnabled
@@ -156,7 +159,10 @@ export default class TabViewPagerScroll<T: *> extends React.Component<
         scrollsToTop={false}
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={1}
-        onScroll={this._handleScroll}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollPosAnimatedValue } } }],
+          { useNativeDriver: true, listener: this._handleScroll }
+        )}
         onScrollBeginDrag={onSwipeStart}
         onScrollEndDrag={onSwipeEnd}
         onMomentumScrollEnd={this._handleMomentumScrollEnd}
@@ -178,7 +184,7 @@ export default class TabViewPagerScroll<T: *> extends React.Component<
             {i === navigationState.index || layout.width ? child : null}
           </View>
         ))}
-      </ScrollView>
+      </AnimatedScrollView>
     );
   }
 }
